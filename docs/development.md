@@ -16,7 +16,7 @@ npm run build:host
 npm run sim
 ```
 
-打开 <http://127.0.0.1:8080>。模拟服务仅监听本机，不连接 USB2CAN 或真实电机。
+打开 [http://127.0.0.1:8080](http://127.0.0.1:8080)。模拟服务仅监听本机，不连接 USB2CAN 或真实电机。
 模拟器直接链接 `firmware/components/robot` 的 C++ 控制与协议代码，Node.js 只负责 HTTP/WebSocket 转发及定时驱动。
 界面的“模拟模式”始终显示；模拟反馈和 CSV 标记 `simulation`。
 
@@ -69,11 +69,11 @@ npm run build
 具体路径以本机安装为准。脚本通过 ESP-IDF 自己的 `idf_tools.py export` 导入工具路径，不修改系统全局环境。
 本次开发环境安装在用户目录 `.cache/conrad-tools/`；未指定 IDF_PATH 时，脚本会自动寻找该目录中的 v5.5.1 与工具链，因此本机可直接运行 `build-firmware.ps1`。
 
-| 构建 | 命令 | 结果 |
-| --- | --- | --- |
-| 真机默认 | `-Profile real` | `build/firmware-real/`；板级未确认、所有电机未确认，CAN 不初始化 |
-| ESP32 上运行模拟 | `-Profile sim` | `build/firmware-sim/`；模拟驱动，TWAI 不初始化 |
-| 编辑真机配置 | `-Profile real -Menuconfig` | 只编辑对应构建目录的配置，完成后重新构建 |
+| 构建             | 命令                          | 结果                                                               |
+| ---------------- | ----------------------------- | ------------------------------------------------------------------ |
+| 真机默认         | `-Profile real`             | `build/firmware-real/`；板级未确认、所有电机未确认，CAN 不初始化 |
+| ESP32 上运行模拟 | `-Profile sim`              | `build/firmware-sim/`；模拟驱动，TWAI 不初始化                   |
+| 编辑真机配置     | `-Profile real -Menuconfig` | 只编辑对应构建目录的配置，完成后重新构建                           |
 
 两种固件分别使用 `robot_real` 与 `robot_sim` NVS 命名空间，模拟配置不会自动进入真机。
 构建目录中的 `sdkconfig` 不提交；热点密码也不提交。
@@ -85,6 +85,8 @@ Flash 容量、启动与 USB 控制台选项在 ESP-IDF 对应菜单中按实物
 
 ## 首次烧录和热点
 
+以COM4为例：
+
 先按 [hardware.md](hardware.md) 核实主控与供电，用 USB 给主控上电，动力侧保持停用。
 在已激活的 ESP-IDF 环境中，从仓库根目录运行（把 `COMx` 替换为识别到的主控串口）：
 
@@ -93,8 +95,33 @@ $buildDir = (Resolve-Path .\build\firmware-real).Path
 idf.py -C firmware -B $buildDir -D "SDKCONFIG=$buildDir/sdkconfig" -p COMx flash monitor
 ```
 
+本机 COM4 模拟固件烧录示例（覆盖板上程序；先退出串口监视器）。先进入模拟固件目录，再执行命令；`flash_args` 引用同目录的应用、bootloader 和分区表：
+
+```powershell
+cd "C:\Users\95833\Desktop\WayiProject\project\Conrad-ForestFire-Robot\build\firmware-sim"
+& "$env:USERPROFILE\.cache\conrad-tools\idf-tools\python_env\idf5.5_py3.12_env\Scripts\python.exe" -m esptool --chip esp32s3 --port COM4 --baud 460800 --before default_reset --after hard_reset write_flash '@flash_args'
+```
+
+此命令已于 2026-09-24 完成实板烧录和校验。只需测试网页时不用重复烧录；代码修改后需先重新构建。
+
 更稳妥的方式是使用构建完成后 ESP-IDF 打印的烧录命令，保持同一个构建目录及 sdkconfig。
 没有连接真实开发板时，不执行烧录；仓库实现过程不自动选择串口、不擦除设备。
+
+查看重启后的热点密码，第一步是在 PowerShell 打开串口：
+
+```powershell
+& "$env:USERPROFILE\.cache\conrad-tools\idf-tools\python_env\idf5.5_py3.12_env\Scripts\python.exe" -m serial.tools.miniterm COM4 115200
+```
+
+第二步：
+
+按一下开发板上的RESET，窗口会出现类似：
+
+```text
+SSID: Conrad-3391 | password: 新密码 | http://192.168.4.1
+```
+
+按 `Ctrl + ]` 退出串口监视器，释放 COM4。热点名称由设备 MAC 派生，同一块板通常不变；随机密码随重启变化。
 
 控制台打印热点名 `Conrad-XXXX`、密码和 `http://192.168.4.1`。
 未设置有效密码时，每次启动生成随机密码；固定场地可在 menuconfig 设置私有的 8–63 字符 ASCII 密码。
@@ -106,13 +133,13 @@ idf.py -C firmware -B $buildDir -D "SDKCONFIG=$buildDir/sdkconfig" -p COMx flash
 
 ## 代码与故障定位
 
-| 模块 | 作用 |
-| --- | --- |
-| `firmware/components/robot` | 独立于 ESP-IDF 的状态机、配置校验、JSON 协议、两型号 CAN 编解码、模拟驱动 |
-| `firmware/main` | FreeRTOS 10 ms 控制任务、TWAI、NVS、热点、HTTP/WebSocket 和嵌入资源 |
-| `web` | 三页中文界面、100 ms 心跳与状态轮询、曲线、CSV |
-| `host` 与 `scripts/simulator.mjs` | 原生 C++ 模拟控制器及本地网页网关 |
-| `tests` | 核心状态机、协议、编解码、故障链路及浏览器交互验证 |
+| 模块                                  | 作用                                                                      |
+| ------------------------------------- | ------------------------------------------------------------------------- |
+| `firmware/components/robot`         | 独立于 ESP-IDF 的状态机、配置校验、JSON 协议、两型号 CAN 编解码、模拟驱动 |
+| `firmware/main`                     | FreeRTOS 10 ms 控制任务、TWAI、NVS、热点、HTTP/WebSocket 和嵌入资源       |
+| `web`                               | 三页中文界面、100 ms 心跳与状态轮询、曲线、CSV                            |
+| `host` 与 `scripts/simulator.mjs` | 原生 C++ 模拟控制器及本地网页网关                                         |
+| `tests`                             | 核心状态机、协议、编解码、故障链路及浏览器交互验证                        |
 
 `board_unverified`：检查板级配置；`motor_offline`：检查动力、CAN、反馈 ID 与模式；`enable_unconfirmed`：未得到有效使能反馈，不应跳过检查；`bus_fault`：真机传输错误保持锁定，检查接线和设备后重启控制器，再手动复位与使能。
 故障复位只复位控制器状态，不会自动清除电机内部故障、标定电机、保存零点或更新固件。
