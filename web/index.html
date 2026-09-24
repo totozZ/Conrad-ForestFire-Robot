@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#163e35" />
+    <title>林间 · 机器人控制台</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="林间控制台首页"
+        ><span class="mark">林</span
+        ><span
+          >林间<span class="brand-sub">CONRAD / FIELD CONTROL</span></span
+        ></a
+      >
+      <div class="side-label">森林防火机器人</div>
+      <nav aria-label="控制台页面">
+        <button class="nav active" data-tab="drive">
+          <span>01</span> 整车控制
+        </button>
+        <button class="nav" data-tab="test"><span>02</span> 单电机调试</button>
+        <button class="nav" data-tab="logs"><span>03</span> 状态与记录</button>
+      </nav>
+      <div class="side-bottom">
+        <span class="dot"></span> 手动测试系统 <small>v0.1 / 三电机平台</small>
+      </div>
+    </aside>
+    <main>
+      <header>
+        <div>
+          <p class="eyebrow">WORKSHOP / 机构验证</p>
+          <h1 id="page-title">整车控制</h1>
+          <p class="subtitle">先确认反馈，再开始动作。每一次测试都有记录。</p>
+        </div>
+        <div class="connection">
+          <span id="connection-dot" class="dot muted"></span
+          ><span id="connection">连接中</span
+          ><button id="reconnect" class="text-button">重新连接</button>
+        </div>
+      </header>
+      <div class="banner" id="environment">
+        等待机器人状态，动作控制尚未开放。
+      </div>
+      <section class="toolbar" aria-label="控制权与停止">
+        <div>
+          <span class="label">控制状态</span
+          ><strong id="control-state">等待连接</strong
+          ><small id="lock-reason">—</small>
+        </div>
+        <div class="toolbar-actions">
+          <button id="claim" class="primary">取得控制权</button
+          ><button id="reset">复位 / 准备</button
+          ><button id="release">释放控制权</button
+          ><button id="stop-all" class="danger">
+            ■ 全部停止 <small>软件停止</small>
+          </button>
+        </div>
+      </section>
+      <p id="notice" class="notice" role="status" aria-live="polite">
+        连接后，依次取得控制权、复位、使能所需电机。
+      </p>
+      <section
+        id="motor-cards"
+        class="motor-grid"
+        aria-label="电机反馈"
+      ></section>
+
+      <section id="tab-drive" class="tab">
+        <div class="two-col">
+          <section class="panel">
+            <div class="panel-title">
+              <h2>行走控制</h2>
+              <span class="tag">按住运行 · 松开归零</span>
+            </div>
+            <label class="range-label" for="drive-limit"
+              >本次速度上限
+              <span
+                ><output id="drive-limit-label">0.20</output> rps</span
+              ></label
+            >
+            <input
+              id="drive-limit"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value="0.2"
+            />
+            <div class="pad" aria-label="方向控制">
+              <button data-drive="1,0" class="up" aria-label="前进">
+                ↑<small>前进</small></button
+              ><button data-drive="0,1" class="left" aria-label="左转">
+                ←<small>左转</small></button
+              ><span class="pad-center">按住<br />运行</span
+              ><button data-drive="0,-1" class="right" aria-label="右转">
+                →<small>右转</small></button
+              ><button data-drive="-1,0" class="down" aria-label="后退">
+                ↓<small>后退</small>
+              </button>
+            </div>
+            <div class="actions">
+              <button id="drive-enable" class="primary">使能左右轮</button
+              ><button id="drive-disable">停止并失能左右轮</button>
+            </div>
+            <p class="hint">
+              先在轮子离地时确认方向。离开页面或失去焦点会触发全部停止。
+            </p>
+          </section>
+          <section class="panel">
+            <div class="panel-title">
+              <h2>刀片机构</h2>
+              <span id="cutter-tag" class="tag">独立解锁</span>
+            </div>
+            <div class="blade-icon" aria-hidden="true">✳</div>
+            <p class="hint center">
+              刀片与行走分别启停。没有有效反馈时禁止启动。
+            </p>
+            <label for="cutter-rps">刀片目标转速 / rps</label
+            ><input
+              id="cutter-rps"
+              type="number"
+              min="0"
+              step="0.05"
+              value="0.2"
+            />
+            <div class="actions wrap">
+              <button id="cutter-unlock">1. 解锁刀片</button
+              ><button id="cutter-enable">2. 使能刀片</button
+              ><button id="cutter-start" class="primary">3. 启动刀片</button
+              ><button id="cutter-stop" class="danger-outline">停止刀片</button>
+            </div>
+            <p class="hint">
+              网页停止不能代替实体断动力。实际停止情况以机构和有效反馈为准。
+            </p>
+          </section>
+        </div>
+      </section>
+
+      <section id="tab-test" class="tab" hidden>
+        <div class="two-col">
+          <section class="panel">
+            <div class="panel-title">
+              <h2>单电机测试</h2>
+              <span class="tag">与整车控制互斥</span>
+            </div>
+            <label for="test-motor">选择电机</label
+            ><select id="test-motor">
+              <option value="left_drive">左行走 · H6215</option>
+              <option value="right_drive">右行走 · H6215</option>
+              <option value="cutter">刀片 · H3510</option>
+            </select>
+            <p id="mode-status" class="hint">
+              所有电机停用后，才可进入或切换测试模式。
+            </p>
+            <button id="enter-test">进入所选电机测试模式</button>
+            <label for="test-rps">测试转速 / rps（行走电机可输入负值）</label
+            ><input id="test-rps" type="number" step="0.05" value="0.2" />
+            <div class="actions wrap">
+              <button id="test-unlock">解锁刀片</button
+              ><button id="test-enable" class="primary">使能所选电机</button
+              ><button id="test-run" class="hold">按住测试</button
+              ><button id="test-stop" class="danger-outline">
+                停止所选电机
+              </button>
+            </div>
+            <button id="enter-drive" class="wide">返回整车控制模式</button>
+          </section>
+          <section class="panel">
+            <div class="panel-title">
+              <h2>电机配置</h2>
+              <button id="load-config" class="text-button">读取当前配置</button>
+            </div>
+            <p class="hint">
+              先全部停止。这里只保存控制器配置，不改写电机内部参数。ID
+              使用十进制。
+            </p>
+            <form id="config-form">
+              <div class="form-grid">
+                <label
+                  >CAN ID<input
+                    name="can_id"
+                    type="number"
+                    min="1"
+                    max="15"
+                    required
+                /></label>
+                <label
+                  >反馈 ID<input
+                    name="feedback_id"
+                    type="number"
+                    min="0"
+                    max="2046"
+                    required
+                /></label>
+                <label
+                  >安装方向<select name="direction">
+                    <option value="1">正向 +1</option>
+                    <option value="-1">反向 -1</option>
+                  </select></label
+                >
+                <label
+                  >控制模式<select name="mode">
+                    <option value="unconfirmed">未确认</option>
+                    <option value="velocity">速度模式</option>
+                  </select></label
+                >
+                <label
+                  >最大速度 / rps<input
+                    name="max_rps"
+                    type="number"
+                    min="0.001"
+                    step="any"
+                    required
+                /></label>
+                <label
+                  >加速度 / rps²<input
+                    name="accel_rps2"
+                    type="number"
+                    min="0.001"
+                    step="any"
+                    required
+                /></label>
+                <label
+                  >V_MAX / rad/s<input
+                    name="v_max_rad_s"
+                    type="number"
+                    min="0.001"
+                    step="any"
+                    required
+                /></label>
+                <label
+                  >反馈超时 / ms<input
+                    name="feedback_timeout_ms"
+                    type="number"
+                    min="100"
+                    max="500"
+                    required
+                /></label>
+              </div>
+              <label class="check"
+                ><input name="verified" type="checkbox" />
+                已核对本电机的模式、ID、映射范围、限速和通信超时保护</label
+              ><button type="submit" class="primary">保存所选电机配置</button>
+            </form>
+          </section>
+        </div>
+      </section>
+
+      <section id="tab-logs" class="tab" hidden>
+        <div class="two-col">
+          <section class="panel">
+            <div class="panel-title">
+              <h2>反馈转速</h2>
+              <span class="tag">最近 30 秒 / rps</span>
+            </div>
+            <canvas
+              id="chart"
+              width="800"
+              height="260"
+              aria-label="三台电机反馈转速曲线"
+            ></canvas>
+            <div class="legend">
+              <span>● 左行走</span><span>● 右行走</span><span>● 刀片</span>
+            </div>
+            <p class="hint">
+              离线数据留空。曲线与导出记录均明确区分模拟和真机。
+            </p>
+          </section>
+          <section class="panel">
+            <div class="panel-title">
+              <h2>运行记录</h2>
+              <button id="export-csv">导出 CSV</button>
+            </div>
+            <p id="sample-count" class="hint">尚无采样</p>
+            <ol id="event-list" class="events"></ol>
+          </section>
+        </div>
+        <section id="fault-panel" class="panel" hidden>
+          <div class="panel-title">
+            <h2>模拟故障注入</h2>
+            <span class="tag">仅模拟模式</span>
+          </div>
+          <div class="actions wrap">
+            <select id="fault-motor" aria-label="故障目标">
+              <option value="left_drive">左行走</option>
+              <option value="right_drive">右行走</option>
+              <option value="cutter">刀片</option></select
+            ><button data-fault="offline">丢失反馈</button
+            ><button data-fault="driver">驱动故障</button
+            ><button data-fault="can">CAN 故障</button
+            ><button data-fault="clear">清除所选模拟故障</button>
+          </div>
+          <p class="hint">
+            清除故障不会自动复位或恢复运动。断网测试可断开连接；重启测试可重新启动模拟服务。
+          </p>
+        </section>
+      </section>
+      <footer>
+        <span>林间 / CONRAD FORESTFIRE ROBOT</span
+        ><span id="footer-status">等待状态</span>
+      </footer>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+set(WEB_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../web/dist")
+foreach(asset index.html app.js style.css)
+  if(NOT EXISTS "${WEB_ROOT}/${asset}")
+    message(FATAL_ERROR "Missing web/dist/${asset}; run npm ci and npm run build in repository root")
+  endif()
+  configure_file("${WEB_ROOT}/${asset}" "${CMAKE_CURRENT_BINARY_DIR}/${asset}" COPYONLY)
+endforeach()
+idf_component_register(SRCS "main.cpp" "twai_io.cpp" INCLUDE_DIRS "."
+  REQUIRES robot esp_http_server esp_wifi esp_event esp_netif nvs_flash esp_timer driver esp_driver_gpio esp_system)
+target_add_binary_data(${COMPONENT_LIB} "${CMAKE_CURRENT_BINARY_DIR}/index.html" TEXT)
+target_add_binary_data(${COMPONENT_LIB} "${CMAKE_CURRENT_BINARY_DIR}/app.js" TEXT)
+target_add_binary_data(${COMPONENT_LIB} "${CMAKE_CURRENT_BINARY_DIR}/style.css" TEXT)

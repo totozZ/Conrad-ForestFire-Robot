@@ -1,0 +1,30 @@
+menu "Conrad robot"
+config ROBOT_SIMULATION
+    bool "Simulated motors (TWAI never initialized)"
+    default n
+config ROBOT_BOARD_VERIFIED
+    bool "Board, wiring, power, CAN and physical stop checked"
+    default n
+    help
+        Only enable after completing docs/hardware.md. This does not verify motor settings.
+config ROBOT_CAN_TX_GPIO
+    int "TWAI TX GPIO (-1 = unconfirmed)"
+    range -1 48
+    default -1
+config ROBOT_CAN_RX_GPIO
+    int "TWAI RX GPIO (-1 = unconfirmed)"
+    range -1 48
+    default -1
+config ROBOT_CAN_BITRATE
+    int "Confirmed classic CAN bitrate (0 = unconfirmed)"
+    default 0
+config ROBOT_BOARD_NAME
+    string "Exact board model and memory variant"
+    default "UNCONFIRMED"
+config ROBOT_AP_PASSWORD
+    string "Hotspot WPA2 password (8-63 ASCII characters)"
+    default ""
+    help
+        Empty generates a device password at boot and prints it on the local USB console.
+        Set a private value with menuconfig for a stable field password. Never commit sdkconfig.
+endmenu

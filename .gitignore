@@ -1,0 +1,13 @@
+.cache/
+node_modules/
+web/dist/
+build/
+firmware/build*/
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/managed_components/
+firmware/dependencies.lock
+test-results/
+playwright-report/
+*.pyc
+__pycache__/

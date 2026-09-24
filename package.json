@@ -1,0 +1,25 @@
+{
+  "name": "conrad-forestfire-control",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && node scripts/build-web.mjs",
+    "build:host": "node scripts/build-host.mjs",
+    "sim": "node scripts/simulator.mjs",
+    "test": "npm run build && npm run build:host && node --test tests/integration.test.mjs",
+    "test:ui": "playwright test",
+    "check": "npm test && npm run test:ui"
+  },
+  "dependencies": {
+    "ws": "8.21.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.1",
+    "esbuild": "0.25.10",
+    "typescript": "5.9.2"
+  }
+}
